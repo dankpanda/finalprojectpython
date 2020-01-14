@@ -45,7 +45,9 @@ gameDisplay.blit(bg_img,(0,0))
 class Higher_Lower():
     
     val_list = [2,3,4,5,6,7,8,9,10,11,12,13,14]
-    icon_list = ['spades','clubs','hearts','diamonds']
+    icon_list = ['diamonds', 'clubs', 'hearts', 'spades']
+    randomize = False
+
     with open("cards\\highscore.txt",'r') as f:
         f_read = f.read()
     if f_read == '': # Avoid errors in the case where the highscore.txt file is empty
@@ -55,17 +57,27 @@ class Higher_Lower():
     def __init__(self):
         self.current_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
         self.next_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
+        self.reshuffle_check()
         self.raw_value_current = int(self.current_card.split('-')[0])
         self.raw_value_next = int(self.next_card.split('-')[0])
         self.score = 0
         self.lost = False
         self.nextaction = False
-    
+        
+        
     # This function checks the outcome when the user goes higher
     def higher(self):
         next_card_img = pygame.image.load('cards\\'+player.next_card+'.png')
         gameDisplay.blit(next_card_img,card2pos)
-        if player.raw_value_current < player.raw_value_next or player.raw_value_current == player.raw_value_next:
+
+        if self.raw_value_current == self.raw_value_next:
+            self.symbol_hierarchy(self.current_card,self.next_card)
+            if self.hierarchy_check == 'Higher':
+                self.win()
+            else:
+                self.lose()
+        
+        elif self.raw_value_current < self.raw_value_next:
             self.win()
         else:
             self.lose()
@@ -74,7 +86,15 @@ class Higher_Lower():
     def lower(self):
         next_card_img = pygame.image.load('cards\\'+player.next_card+'.png')
         gameDisplay.blit(next_card_img,card2pos)
-        if player.raw_value_current > player.raw_value_next or player.raw_value_current == player.raw_value_next:
+
+        if self.raw_value_current == self.raw_value_next:
+            self.symbol_hierarchy(self.current_card,self.next_card)
+            if self.hierarchy_check == 'Lower':
+                self.win()
+            else:
+                self.lose()
+
+        elif self.raw_value_current > self.raw_value_next:
             self.win()
         else:
             self.lose()
@@ -86,6 +106,7 @@ class Higher_Lower():
         self.score += 1
         self.current_card = self.next_card 
         self.next_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
+        self.reshuffle_check()
         self.raw_value_current = int(self.current_card.split('-')[0])
         self.raw_value_next = int(self.next_card.split('-')[0])
         self.nextaction = True
@@ -104,6 +125,7 @@ class Higher_Lower():
     def lost_shuffle(self):
         self.current_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
         self.next_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
+        self.reshuffle_check()
         self.raw_value_current = int(self.current_card.split('-')[0])
         self.raw_value_next = int(self.next_card.split('-')[0])
         self.lost = False
@@ -111,6 +133,25 @@ class Higher_Lower():
     # Updates the current score
     def set_score(self,score):
         self.score = score
+
+    # This function is used to check the outcome when both cards have equal value using poker rules
+    def symbol_hierarchy(self,x,y):
+        self.current_symbol = x.split('-')[1]
+        self.next_symbol = y.split('-')[1]
+        if self.icon_list.index(self.current_symbol) < self.icon_list.index(self.next_symbol):
+            self.hierarchy_check = 'Higher'
+        else:
+            self.hierarchy_check = 'Lower'
+
+    # Ensures it is not possible for both current and next card to be the exact same card     
+    def reshuffle_check(self):
+        if self.current_card == self.next_card:
+            self.randomize = True
+        
+        while self.randomize:
+            self.next_card = str(random.choice(self.val_list)) + '-' + random.choice(self.icon_list)
+            if self.next_card != self.current_card:
+                self.randomize = False
 
 # Function to display text on the screen
 def display_message(msg, font, color, pos):
@@ -123,6 +164,7 @@ next_card_img = pygame.image.load('cards\\'+player.next_card+'.png')
     
 # Main game loop
 def gameloop():
+    pygame.mixer.music.set_volume(0.3)
     pygame.mixer.music.play(-1)
     player.set_score(player.score) # Refreshes the player's score live
     run = True
@@ -136,7 +178,7 @@ def gameloop():
         display_message("Highscore: "+str(player.highscore),scorefont,white,highscorepos)
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT:   
                 with open("cards\\highscore.txt","w") as f: # Saves the new highscore 
                     f.write(str(player.highscore))
                 run = False
@@ -144,6 +186,7 @@ def gameloop():
         # Game flow if player have not lost
         if player.lost == False:
             if player.nextaction == False:
+                
                 current_card_img = pygame.image.load('cards\\'+player.current_card+'.png')
                 gameDisplay.blit(music_credit_img,(5,0))
                 gameDisplay.blit(continue2_img,(275,375))

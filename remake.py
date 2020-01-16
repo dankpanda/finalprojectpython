@@ -49,7 +49,7 @@ class Higher_Lower():
     randomize = False
 
     with open("cards\\highscore.txt",'r') as f:
-        f_read = f.read()
+        f_read = f.read()   
     if f_read == '': # Avoid errors in the case where the highscore.txt file is empty
         f_read = 0
     highscore = int(f_read)
@@ -64,38 +64,20 @@ class Higher_Lower():
         self.lost = False
         self.nextaction = False
         
-        
-    # This function checks the outcome when the user goes higher
-    def higher(self):
+    # This function checks the outcome of user's action
+    def action_func(self):
         next_card_img = pygame.image.load('cards\\'+player.next_card+'.png')
         gameDisplay.blit(next_card_img,card2pos)
 
-        if self.raw_value_current == self.raw_value_next:
-            self.symbol_hierarchy(self.current_card,self.next_card)
-            if self.hierarchy_check == 'Higher':
-                self.win()
-            else:
-                self.lose()
+        if self.raw_value_current == self.raw_value_next and self.symbol_hierarchy(self.current_card, self.next_card) == self.action:
+            self.win()
         
-        elif self.raw_value_current < self.raw_value_next:
+        elif self.raw_value_current < self.raw_value_next and self.action == 'UP':
             self.win()
-        else:
-            self.lose()
-    
-    # This function checks the outcome when the user goes lower
-    def lower(self):
-        next_card_img = pygame.image.load('cards\\'+player.next_card+'.png')
-        gameDisplay.blit(next_card_img,card2pos)
-
-        if self.raw_value_current == self.raw_value_next:
-            self.symbol_hierarchy(self.current_card,self.next_card)
-            if self.hierarchy_check == 'Lower':
-                self.win()
-            else:
-                self.lose()
-
-        elif self.raw_value_current > self.raw_value_next:
+        
+        elif self.raw_value_current > self.raw_value_next and self.action == 'DOWN':
             self.win()
+
         else:
             self.lose()
 
@@ -105,12 +87,8 @@ class Higher_Lower():
         gameDisplay.blit(win_img,(255,305))
         self.score += 1
         self.current_card = self.next_card 
-        self.next_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
-        self.reshuffle_check()
-        self.raw_value_current = int(self.current_card.split('-')[0])
-        self.raw_value_next = int(self.next_card.split('-')[0])
+        self.shuffle()
         self.nextaction = True
-        
     
     # This function will be called when the outcome of user's action is not a win
     def lose(self):
@@ -124,11 +102,15 @@ class Higher_Lower():
     # This function will be called when the user loses and decides to play again
     def lost_shuffle(self):
         self.current_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
+        self.shuffle()
+        self.lost = False
+
+    # This function is used to shuffle the cards
+    def shuffle(self):
         self.next_card = str(random.choice(self.val_list)) + "-" + random.choice(self.icon_list)
         self.reshuffle_check()
         self.raw_value_current = int(self.current_card.split('-')[0])
         self.raw_value_next = int(self.next_card.split('-')[0])
-        self.lost = False
 
     # Updates the current score
     def set_score(self,score):
@@ -139,9 +121,9 @@ class Higher_Lower():
         self.current_symbol = x.split('-')[1]
         self.next_symbol = y.split('-')[1]
         if self.icon_list.index(self.current_symbol) < self.icon_list.index(self.next_symbol):
-            self.hierarchy_check = 'Higher'
+            return 'UP'
         else:
-            self.hierarchy_check = 'Lower'
+            return 'DOWN'
 
     # Ensures it is not possible for both current and next card to be the exact same card     
     def reshuffle_check(self):
@@ -198,10 +180,12 @@ def gameloop():
                 if event.type == pygame.KEYDOWN:
                     
                     if event.key == pygame.K_UP:
-                        player.higher()
+                        player.action = 'UP'
+                        player.action_func()
                     
                     elif event.key == pygame.K_DOWN:
-                        player.lower()
+                        player.action = 'DOWN'
+                        player.action_func()
 
             # This ensures the user does not accidentally choose an action twice and instead prompts for the input 'right' before proceeding
             elif player.nextaction  == True:
